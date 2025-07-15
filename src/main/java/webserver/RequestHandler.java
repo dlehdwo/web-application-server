@@ -35,18 +35,21 @@ public class RequestHandler extends Thread {
             log.debug("header: {}", line);
 
             if (line == null) {
-                return ;
+                return;
             }
 
             String[] split = line.split(" ");
 
             int contentLength = 0;
+            String cookie = null;
             while (!line.isEmpty()) {
                 line = bufferedReader.readLine();
                 if (line.startsWith("Content-Length:")) {
                     String[] split1 = line.split(" ");
                     contentLength = Integer.parseInt(split1[1]);
                     log.debug("***Content-Length: {}", contentLength);
+                } else if (line.startsWith("Cookie:")) {
+                    cookie = line.split(" ")[1];
                 }
                 log.debug("reqeust line: {}", line);
             }
@@ -62,10 +65,29 @@ public class RequestHandler extends Thread {
                 String data = IOUtils.readData(bufferedReader, contentLength);
                 login(data, dos);
 
+            } else if (split[1].equals("/user/list")){
+                System.out.println("cookie = " + cookie);
+                boolean logined = false;
+                if (cookie != null) {
+                    logined = Boolean.parseBoolean(cookie.split("=")[1]);
+                } else {
+                    logined = false;
+                }
+                if (logined) {
+                    StringBuilder userList = new StringBuilder();
+                    for (User user : users) {
+                        userList.append(user.toString()).append("\n");
+                    }
+                    response200Header(dos, "html", userList.length());
+                    responseBody(dos, userList.toString().getBytes());
+                } else {
+                    response302Header(dos,"/user/login.html");
+                }
+
             } else {
                 byte[] body = Files.readAllBytes(new File("./webapp" + split[1]).toPath());
                 String extension = getExtension(split[1]);
-                response200Header(dos,extension, body.length);
+                response200Header(dos, extension, body.length);
                 responseBody(dos, body);
             }
         } catch (IOException e) {
