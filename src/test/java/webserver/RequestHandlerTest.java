@@ -24,4 +24,12 @@ class RequestHandlerTest {
         User expected = new User("aaa", "bbb", "dongjae", "lee%40gmail");
         assertThat(answer).usingRecursiveComparison().isEqualTo(expected);
     }
+
+    @Test
+    @DisplayName("요구사항2 POST으로 회원가입하기")
+    void POST으로회원가입하기() {
+        User answer = requestHandler.signUpPost("userId=aaa&password=bbb&name=dongjae&email=lee%40gmail");
+        User expected = new User("aaa", "bbb", "dongjae", "lee%40gmail");
+        assertThat(answer).usingRecursiveComparison().isEqualTo(expected);
+    }
 }
