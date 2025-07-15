@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.IOUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -36,13 +37,21 @@ public class RequestHandler extends Thread {
 
             String[] split = line.split(" ");
 
+            int contentLength = 0;
             while (!line.isEmpty()) {
                 line = bufferedReader.readLine();
+                if (line.startsWith("Content-Length:")) {
+                    String[] split1 = line.split(" ");
+                    contentLength = Integer.parseInt(split1[1]);
+                    log.debug("***Content-Length: {}", contentLength);
+                }
                 log.debug("reqeust line: {}", line);
             }
 
             if (split[1].startsWith("/user/create")) {
-                User user = signUpGet(split[1]);
+                String data = IOUtils.readData(bufferedReader, contentLength);
+                User user = signUpPost(data);
+                log.debug("user: {}", user);
             } else {
                 DataOutputStream dos = new DataOutputStream(out);
                 byte[] body = Files.readAllBytes(new File("./webapp" + split[1]).toPath());
@@ -52,6 +61,27 @@ public class RequestHandler extends Thread {
         } catch (IOException e) {
             log.error(e.getMessage());
         }
+    }
+
+    public User signUpPost(String data) {
+        String[] paramsSplit = data.split("&");
+        String userId = null;
+        String password = null;
+        String name = null;
+        String email = null;
+        for (String param : paramsSplit) {
+            String[] paramSplit = param.split("=");
+            if(paramSplit[0].equals("userId")) {
+                userId = paramSplit[1];
+            } else if (paramSplit[0].equals("password")) {
+                password = paramSplit[1];
+            } else if (paramSplit[0].equals("name")) {
+                name = paramSplit[1];
+            } else if (paramSplit[0].equals("email")) {
+                email = paramSplit[1];
+            }
+        }
+        return new User(userId, password, name, email);
     }
 
     public User signUpGet(String url) {
