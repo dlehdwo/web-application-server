@@ -42,30 +42,7 @@ public class RequestHandler extends Thread {
             }
 
             if (split[1].startsWith("/user/create")) {
-                String url = split[1];
-                int index = url.indexOf("?");
-                String requestPath = url.substring(0, index);
-                String params = url.substring(index + 1);
-
-                String[] paramsSplit = params.split("&");
-                String userId = null;
-                String password = null;
-                String name = null;
-                String email = null;
-                for (String param : paramsSplit) {
-                    String[] paramSplit = param.split("=");
-                    if(paramSplit[0].equals("userId")) {
-                        userId = paramSplit[1];
-                    } else if (paramSplit[0].equals("password")) {
-                        password = paramSplit[1];
-                    } else if (paramSplit[0].equals("name")) {
-                        name = paramSplit[1];
-                    } else if (paramSplit[0].equals("email")) {
-                        email = paramSplit[1];
-                    }
-                }
-                User user = new User(userId, password, name, email);
-
+                User user = signUpGet(split[1]);
             } else {
                 DataOutputStream dos = new DataOutputStream(out);
                 byte[] body = Files.readAllBytes(new File("./webapp" + split[1]).toPath());
@@ -75,6 +52,31 @@ public class RequestHandler extends Thread {
         } catch (IOException e) {
             log.error(e.getMessage());
         }
+    }
+
+    public User signUpGet(String url) {
+        int index = url.indexOf("?");
+        String requestPath = url.substring(0, index);
+        String params = url.substring(index + 1);
+
+        String[] paramsSplit = params.split("&");
+        String userId = null;
+        String password = null;
+        String name = null;
+        String email = null;
+        for (String param : paramsSplit) {
+            String[] paramSplit = param.split("=");
+            if(paramSplit[0].equals("userId")) {
+                userId = paramSplit[1];
+            } else if (paramSplit[0].equals("password")) {
+                password = paramSplit[1];
+            } else if (paramSplit[0].equals("name")) {
+                name = paramSplit[1];
+            } else if (paramSplit[0].equals("email")) {
+                email = paramSplit[1];
+            }
+        }
+        return new User(userId, password, name, email);
     }
 
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
