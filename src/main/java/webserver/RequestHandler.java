@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 
 import model.User;
 import org.slf4j.Logger;
@@ -12,6 +14,7 @@ import util.IOUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
+    private static List<User> users = new ArrayList<User>();
 
     private Socket connection;
 
@@ -48,13 +51,16 @@ public class RequestHandler extends Thread {
                 log.debug("reqeust line: {}", line);
             }
 
+            DataOutputStream dos = new DataOutputStream(out);
             if (split[1].startsWith("/user/create")) {
                 String data = IOUtils.readData(bufferedReader, contentLength);
                 User user = signUpPost(data);
+                users.add(user);
                 log.debug("user: {}", user);
+                resposse302Header(dos);
             } else {
-                DataOutputStream dos = new DataOutputStream(out);
                 byte[] body = Files.readAllBytes(new File("./webapp" + split[1]).toPath());
+
                 response200Header(dos, body.length);
                 responseBody(dos, body);
             }
@@ -107,6 +113,17 @@ public class RequestHandler extends Thread {
             }
         }
         return new User(userId, password, name, email);
+    }
+
+    private void resposse302Header(DataOutputStream dos) {
+        try {
+            dos.writeBytes("HTTP/1.1 302 Found\r\n");
+            dos.writeBytes("Location: /index.html\r\n");
+            dos.writeBytes("Content-Length: 0\r\n");
+            dos.flush();
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
     }
 
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
