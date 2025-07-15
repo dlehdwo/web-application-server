@@ -60,30 +60,35 @@ public class RequestHandler extends Thread {
                 response302Header(dos, "/index.html");
             } else if (split[1].equals("/user/login")) {
                 String data = IOUtils.readData(bufferedReader, contentLength);
-                String[] split1 = data.split("&");
-                String userId = null;
-                String password = null;
-                for (String param : split1) {
-                    String[] paramSplit = param.split("=");
-                    if(paramSplit[0].equals("userId")) {
-                        userId = paramSplit[1];
-                    } else if (paramSplit[0].equals("password")) {
-                        password = paramSplit[1];
-                    }
-                }
-                if (isOKUser(userId, password)) {
-                    response302HeaderWithCookie(dos, "/index.html", "logined=true");
-                } else {
-                    response302HeaderWithCookie(dos, "/user/login_failed.html", "logined=false");
-                }
+                login(data, dos);
 
             } else {
                 byte[] body = Files.readAllBytes(new File("./webapp" + split[1]).toPath());
-                response200Header(dos, body.length);
+                String extension = getExtension(split[1]);
+                response200Header(dos,extension, body.length);
                 responseBody(dos, body);
             }
         } catch (IOException e) {
             log.error(e.getMessage());
+        }
+    }
+
+    private void login(String data, DataOutputStream dos) {
+        String[] split1 = data.split("&");
+        String userId = null;
+        String password = null;
+        for (String param : split1) {
+            String[] paramSplit = param.split("=");
+            if(paramSplit[0].equals("userId")) {
+                userId = paramSplit[1];
+            } else if (paramSplit[0].equals("password")) {
+                password = paramSplit[1];
+            }
+        }
+        if (isOKUser(userId, password)) {
+            response302HeaderWithCookie(dos, "/index.html", "logined=true");
+        } else {
+            response302HeaderWithCookie(dos, "/user/login_failed.html", "logined=false");
         }
     }
 
@@ -156,10 +161,10 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
+    private void response200Header(DataOutputStream dos, String extension, int lengthOfBodyContent) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
-            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+            dos.writeBytes("Content-Type: text/"+extension+";charset=utf-8\r\n");
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {
@@ -188,5 +193,10 @@ public class RequestHandler extends Thread {
             }
         }
         return false;
+    }
+
+    private String getExtension(String text) {
+        int index = text.lastIndexOf(".");
+        return text.substring(index + 1);
     }
 }
