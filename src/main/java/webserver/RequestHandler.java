@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
+import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ public class RequestHandler extends Thread {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
 
             String line = bufferedReader.readLine();
-            log.debug("reqeust line: {}", line);
+            log.debug("header: {}", line);
 
             if (line == null) {
                 return ;
@@ -40,10 +41,37 @@ public class RequestHandler extends Thread {
                 log.debug("reqeust line: {}", line);
             }
 
-            DataOutputStream dos = new DataOutputStream(out);
-            byte[] body = Files.readAllBytes(new File("./webapp" + split[1]).toPath());
-            response200Header(dos, body.length);
-            responseBody(dos, body);
+            if (split[1].startsWith("/user/create")) {
+                String url = split[1];
+                int index = url.indexOf("?");
+                String requestPath = url.substring(0, index);
+                String params = url.substring(index + 1);
+
+                String[] paramsSplit = params.split("&");
+                String userId = null;
+                String password = null;
+                String name = null;
+                String email = null;
+                for (String param : paramsSplit) {
+                    String[] paramSplit = param.split("=");
+                    if(paramSplit[0].equals("userId")) {
+                        userId = paramSplit[1];
+                    } else if (paramSplit[0].equals("password")) {
+                        password = paramSplit[1];
+                    } else if (paramSplit[0].equals("name")) {
+                        name = paramSplit[1];
+                    } else if (paramSplit[0].equals("email")) {
+                        email = paramSplit[1];
+                    }
+                }
+                User user = new User(userId, password, name, email);
+
+            } else {
+                DataOutputStream dos = new DataOutputStream(out);
+                byte[] body = Files.readAllBytes(new File("./webapp" + split[1]).toPath());
+                response200Header(dos, body.length);
+                responseBody(dos, body);
+            }
         } catch (IOException e) {
             log.error(e.getMessage());
         }
