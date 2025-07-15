@@ -52,15 +52,33 @@ public class RequestHandler extends Thread {
             }
 
             DataOutputStream dos = new DataOutputStream(out);
-            if (split[1].startsWith("/user/create")) {
+            if (split[1].equals("/user/create")) {
                 String data = IOUtils.readData(bufferedReader, contentLength);
                 User user = signUpPost(data);
                 users.add(user);
                 log.debug("user: {}", user);
-                resposse302Header(dos);
+                response302Header(dos, "/index.html");
+            } else if (split[1].equals("/user/login")) {
+                String data = IOUtils.readData(bufferedReader, contentLength);
+                String[] split1 = data.split("&");
+                String userId = null;
+                String password = null;
+                for (String param : split1) {
+                    String[] paramSplit = param.split("=");
+                    if(paramSplit[0].equals("userId")) {
+                        userId = paramSplit[1];
+                    } else if (paramSplit[0].equals("password")) {
+                        password = paramSplit[1];
+                    }
+                }
+                if (isOKUser(userId, password)) {
+                    response302HeaderWithCookie(dos, "/index.html", "logined=true");
+                } else {
+                    response302HeaderWithCookie(dos, "/user/login_failed.html", "logined=false");
+                }
+
             } else {
                 byte[] body = Files.readAllBytes(new File("./webapp" + split[1]).toPath());
-
                 response200Header(dos, body.length);
                 responseBody(dos, body);
             }
@@ -115,10 +133,22 @@ public class RequestHandler extends Thread {
         return new User(userId, password, name, email);
     }
 
-    private void resposse302Header(DataOutputStream dos) {
+    private void response302HeaderWithCookie(DataOutputStream dos, String url, String cookie) {
         try {
             dos.writeBytes("HTTP/1.1 302 Found\r\n");
-            dos.writeBytes("Location: /index.html\r\n");
+            dos.writeBytes("Location: " + url + "\r\n");
+            dos.writeBytes("Content-Length: 0\r\n");
+            dos.writeBytes("Set-Cookie: " + cookie + "\r\n");
+            dos.flush();
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void response302Header(DataOutputStream dos, String url) {
+        try {
+            dos.writeBytes("HTTP/1.1 302 Found\r\n");
+            dos.writeBytes("Location: " + url + "\r\n");
             dos.writeBytes("Content-Length: 0\r\n");
             dos.flush();
         } catch (IOException e) {
@@ -149,5 +179,14 @@ public class RequestHandler extends Thread {
     private boolean isIndexHtml(String line) {
         String[] split = line.split(" ");
         return split[1].equals("/index.html");
+    }
+
+    private boolean isOKUser(String userId, String password) {
+        for (User user : users) {
+            if(user.getUserId().equals(userId) && user.getPassword().equals(password)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
