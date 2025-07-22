@@ -15,7 +15,6 @@ import util.IOUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
-    private static List<User> users = new ArrayList<User>();
 
     private Socket connection;
 
@@ -29,7 +28,8 @@ public class RequestHandler extends Thread {
                 connection.getPort());
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
-            // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
+            HttpRequest request = new HttpRequest(in);
+            String path = getDefaultPath(request.getPath())
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
 
             String line = bufferedReader.readLine();
@@ -107,6 +107,13 @@ public class RequestHandler extends Thread {
         }
     }
 
+    private String getDefaultPath(String path) {
+        if (path.equals("/")) {
+            return "/index.html";
+        }
+        return path;
+    }
+
     private static Boolean getCookie(String line) {
         String cookie = line.split(":")[1].trim();
         Map<String, String> cookies = HttpRequestUtils.parseCookies(cookie);
@@ -129,7 +136,7 @@ public class RequestHandler extends Thread {
             dos.writeBytes("HTTP/1.1 302 Found\r\n");
             dos.writeBytes("Location: " + url + "\r\n");
             dos.writeBytes("Content-Length: 0\r\n");
-            dos.writeBytes("Set-Cookie: " + cookie + "\r\n");
+            dos.writeBytes("Set-Cookie: " + cookie + "; Path=/ \r\n");
             dos.flush();
         } catch (IOException e) {
             log.error(e.getMessage());
