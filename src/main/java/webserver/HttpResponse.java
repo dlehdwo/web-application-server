@@ -36,6 +36,19 @@ public class HttpResponse {
         }
     }
 
+    public void forwardBody(String body) {
+        try {
+            byte[] contents = body.getBytes();
+            headers.put("Content-Type", "text/html;charset=utf-8");
+            headers.put("Content-Length", contents.length + "");
+            printHeader("200 OK");
+            printBody(contents);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     public void sendRedirect(String url) {
         try {
             addHeader("Location", url);
@@ -60,6 +73,7 @@ public class HttpResponse {
 
     private void printBody(byte[] body) throws IOException {
         dos.write(body, 0, body.length);
+        dos.writeBytes("\r\n");
         dos.flush();
     }
 }

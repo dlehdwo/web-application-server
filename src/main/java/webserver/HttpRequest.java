@@ -73,4 +73,13 @@ public class HttpRequest {
     public String getParameter(String key) {
         return parameters.get(key);
     }
+
+    public boolean isLogin() {
+        Map<String, String> cookies = HttpRequestUtils.parseCookies(getHeader("Cookie"));
+        String value = cookies.get("logined");
+        if (value == null) {
+            return false;
+        }
+        return Boolean.parseBoolean(value);
+    }
 }
